@@ -72,10 +72,15 @@ init =
 {- UPDATE -}
 
 
-step grid x y isAlive =
+{-| Determine whether the grid cell at position i j
+is alive or dead at the the next step. Here
+isAlive is assumed to be the current state of the cell i j.
+-}
+step : Grid -> Int -> Int -> Bool -> Bool
+step grid i j isAlive =
     let
         neighborCount =
-            Matrix.Extra.neighbours x y grid
+            Matrix.Extra.neighbours i j grid
                 |> List.filter identity
                 |> List.length
     in
@@ -85,6 +90,10 @@ step grid x y isAlive =
             True
         else
             False
+
+
+
+{- Helpers for generating a ner random live cell -}
 
 
 randomPair : Random.Generator ( Int, Int )
@@ -103,40 +112,78 @@ createLiveCells grid newCell x y isAlive =
             isAlive
 
 
+generateNewCells model =
+    if model.step % cycleLength == 0 then
+        not model.generateNewCells
+    else
+        model.generateNewCells
+
+
+
+{- Components of the update function -}
+
+
+{-| Use the argument `grid` to set model.grid.
+-}
+setGrid model grid =
+    ( { model | grid = grid }, Cmd.none )
+
+
+{-| Make a new live cell at position (i, j)
+-}
+makeNewLiveCell model ( i, j ) =
+    let
+        genCells =
+            generateNewCells model
+
+        newGrid =
+            if genCells then
+                Matrix.indexedMap (createLiveCells model.grid ( i, j )) model.grid
+            else
+                model.grid
+    in
+        ( { model | grid = newGrid, generateNewCells = genCells }, Cmd.none )
+
+
+{-| Take one step forward: compute a ne grid from the old one using
+the rules in the partially applied function `step model.grid` using
+
+indexedMap : (Int -> Int -> a -> b) -> Matrix a -> Matrix b
+-- Apply a function of every element in the matrix. Notice that
+
+step : Grid -> Int -> Int -> Bool -> Bool
+
+so that
+
+step model.grid : Int -> Int -> Bool -> Bool
+
+is of the right type for `Matrix.indexedMap`
+
+Also, issue a command to generate a new random pair (i,j) for
+consumption by the NewCell message handler the update function.
+
+-}
+takeStep model =
+    let
+        newGrid =
+            Matrix.indexedMap (step model.grid) model.grid
+    in
+        ( { model | grid = newGrid, step = model.step + 1 }, Random.generate NewCell randomPair )
+
+
+{-| UPDATE FUNCTION
+-}
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SetGrid grid_ ->
-            ( { model | grid = grid_ }, Cmd.none )
+        SetGrid grid ->
+            setGrid model grid
 
         NewCell ( a, b ) ->
-            let
-                grid1 =
-                    model.grid
-
-                generateNewCells =
-                    if model.step % cycleLength == 0 then
-                        not model.generateNewCells
-                    else
-                        model.generateNewCells
-
-                grid2 =
-                    if generateNewCells then
-                        Matrix.indexedMap (createLiveCells grid1 ( a, b )) grid1
-                    else
-                        grid1
-            in
-                ( { model | grid = grid2, generateNewCells = generateNewCells }, Cmd.none )
+            makeNewLiveCell model ( a, b )
 
         Step ->
-            let
-                grid1 =
-                    model.grid
-
-                grid2 =
-                    Matrix.indexedMap (step grid1) grid1
-            in
-                ( { model | grid = grid2, step = model.step + 1 }, Random.generate NewCell randomPair )
+            takeStep model
 
 
 
