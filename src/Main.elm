@@ -149,61 +149,7 @@ subscriptions _ =
 
 
 
-{- VIEW FUNCTION -}
-
-
-countLiveCells : Grid -> Int
-countLiveCells grid =
-    grid |> Matrix.filter identity |> Array.length
-
-
-stepLabel : Model -> String
-stepLabel model =
-    "Step = " ++ (toString model.step)
-
-
-populationLabel : Model -> String
-populationLabel model =
-    "Population = " ++ (toString (countLiveCells model.grid))
-
-
-densityLabel : Model -> String
-densityLabel model =
-    let
-        population =
-            (toFloat (countLiveCells model.grid))
-
-        nCells =
-            (toFloat (gridSize * gridSize))
-
-        density =
-            population / nCells
-    in
-        "Density = " ++ (String.padRight 7 '0' (toString density))
-
-
-randomBirthLabel model =
-    let
-        cycleStage =
-            model.step % cycleLength
-
-        cycleStageString =
-            (toString cycleStage) ++ "/" ++ (toString cycleLength)
-    in
-        if model.generateNewCells then
-            "Birth: ON (" ++ cycleStageString ++ ")"
-        else
-            "Birth: OFF (" ++ cycleStageString ++ ")"
-
-
-legend : Model -> String
-legend model =
-    [ stepLabel model
-    , populationLabel model
-    , densityLabel model
-    , randomBirthLabel model
-    ]
-        |> String.join (", ")
+{- VIEW FUMCTION -}
 
 
 view : Model -> Html Msg
@@ -216,12 +162,40 @@ view model =
         ]
 
 
+
+{- VIEW FUMCTION: CELL GRID -}
+
+
+{-| If the matrix has N rows, construct the list [0, 1, ..., N]
+using List.range 0 (Matrix.height matrix). Feed this list to
+a function
+
+flip Matrix.getRow matrix
+
+that gets the kth row of the matrix. Here we use
+
+getRow : Int -> Matrix a -> Maybe (Array a)
+
+Thus a Maybe Array is returned. Feed this result to the
+composition
+
+Maybe.withDefault Array.empty >> Array.toList
+
+which turns it into a list.
+
+-}
 matrixToList : Matrix a -> List (List a)
 matrixToList matrix =
     List.range 0 (Matrix.height matrix)
         |> List.map (flip Matrix.getRow matrix >> Maybe.withDefault Array.empty >> Array.toList)
 
 
+{-| row takes an array of booleans and
+returns a table row cells corresponding
+to the array. A cell for False is displayed
+as a dark green square, and a cell for True
+is displayed as a yellow square.
+-}
 row : List Bool -> Html Msg
 row =
     List.map cell >> (tr [])
@@ -247,3 +221,61 @@ cellStyle isAlive =
             , ( "height", "4px" )
             , ( "border", "0.5px solid black" )
             ]
+
+
+
+{- VIEW FUNCTION: LABELS -}
+
+
+countLiveCells : Grid -> Int
+countLiveCells grid =
+    grid |> Matrix.filter identity |> Array.length
+
+
+stepLabel : Model -> String
+stepLabel model =
+    "Step: " ++ (toString model.step)
+
+
+populationLabel : Model -> String
+populationLabel model =
+    "Population: " ++ (toString (countLiveCells model.grid))
+
+
+densityLabel : Model -> String
+densityLabel model =
+    let
+        population =
+            (toFloat (countLiveCells model.grid))
+
+        nCells =
+            (toFloat (gridSize * gridSize))
+
+        density =
+            population / nCells
+    in
+        "Density: " ++ (String.padRight 7 '0' (toString density))
+
+
+randomBirthLabel model =
+    let
+        cycleStage =
+            model.step % cycleLength
+
+        cycleStageString =
+            (toString cycleStage) ++ "/" ++ (toString cycleLength)
+    in
+        if model.generateNewCells then
+            "Birth: ON (" ++ cycleStageString ++ ")"
+        else
+            "Birth: OFF (" ++ cycleStageString ++ ")"
+
+
+legend : Model -> String
+legend model =
+    [ stepLabel model
+    , populationLabel model
+    , densityLabel model
+    , randomBirthLabel model
+    ]
+        |> String.join (", ")
