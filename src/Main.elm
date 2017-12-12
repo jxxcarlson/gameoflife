@@ -101,6 +101,7 @@ randomPair =
     Random.pair (Random.int 0 gridSize) (Random.int 0 gridSize)
 
 
+createLiveCells : Grid -> ( Int, Int ) -> Int -> Int -> Bool -> Bool
 createLiveCells grid newCell x y isAlive =
     let
         ( xx, yy ) =
@@ -112,6 +113,7 @@ createLiveCells grid newCell x y isAlive =
             isAlive
 
 
+generateNewCells : Model -> Bool
 generateNewCells model =
     if model.step % cycleLength == 0 then
         not model.generateNewCells
@@ -125,12 +127,14 @@ generateNewCells model =
 
 {-| Use the argument `grid` to set model.grid.
 -}
+setGrid : Model -> Grid -> ( Model, Cmd Msg )
 setGrid model grid =
     ( { model | grid = grid }, Cmd.none )
 
 
 {-| Make a new live cell at position (i, j)
 -}
+makeNewLiveCell : Model -> ( Int, Int ) -> ( Model, Cmd Msg )
 makeNewLiveCell model ( i, j ) =
     let
         genCells =
@@ -145,7 +149,7 @@ makeNewLiveCell model ( i, j ) =
         ( { model | grid = newGrid, generateNewCells = genCells }, Cmd.none )
 
 
-{-| Take one step forward: compute a ne grid from the old one using
+{-| Take one step forward: compute a new grid from the old one using
 the rules in the partially applied function `step model.grid` using
 
 indexedMap : (Int -> Int -> a -> b) -> Matrix a -> Matrix b
@@ -163,6 +167,7 @@ Also, issue a command to generate a new random pair (i,j) for
 consumption by the NewCell message handler the update function.
 
 -}
+takeStep : Model -> ( Model, Cmd Msg )
 takeStep model =
     let
         newGrid =
@@ -304,6 +309,7 @@ densityLabel model =
         "Density: " ++ (String.padRight 7 '0' (toString density))
 
 
+randomBirthLabel : Model -> String
 randomBirthLabel model =
     let
         cycleStage =
