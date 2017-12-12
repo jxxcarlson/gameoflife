@@ -113,6 +113,10 @@ createLiveCells grid newCell x y isAlive =
             isAlive
 
 
+{-| Return the negation of the model.generatateNewCells
+boolean at the start of each cycle. A cycle has lenfth
+cycleLength.
+-}
 generateNewCells : Model -> Bool
 generateNewCells model =
     if model.step % cycleLength == 0 then
@@ -176,7 +180,13 @@ takeStep model =
         ( { model | grid = newGrid, step = model.step + 1 }, Random.generate NewCell randomPair )
 
 
-{-| UPDATE FUNCTION
+{-| UPDATE FUNCTION:
+
+1.  On initialization, set the grid to a matrix of random values (True, False)
+2.  When NewCell (i, j) message is received, create a live cell at at location (i, j)
+3.  When a Step message is received, compute a new grid from the old one and issue
+    a command to generate a tuple of two random numbers and issue a NewCell randomPair message.
+
 -}
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -184,8 +194,8 @@ update msg model =
         SetGrid grid ->
             setGrid model grid
 
-        NewCell ( a, b ) ->
-            makeNewLiveCell model ( a, b )
+        NewCell ( i, j ) ->
+            makeNewLiveCell model ( i, j )
 
         Step ->
             takeStep model
@@ -195,6 +205,9 @@ update msg model =
 {- SUBSCRIPTIONS -}
 
 
+{-| Send the step message at each animation frame req4ust of
+the javascript rendering engine.
+-}
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     AnimationFrame.diffs (always Step)
@@ -204,6 +217,8 @@ subscriptions _ =
 {- VIEW FUMCTION -}
 
 
+{-| Display the cell grid with the data legend below it
+-}
 view : Model -> Html Msg
 view model =
     div []
@@ -253,11 +268,17 @@ row =
     List.map cell >> (tr [])
 
 
+{-| Display a cell, with the "look"
+depending on wther it is "alive" or not.
+-}
 cell : Bool -> Html Msg
 cell isAlive =
     td [ cellStyle isAlive ] []
 
 
+{-| Compute style: a yellow square if the cell is alive,
+dark green if not.
+-}
 cellStyle : Bool -> Attribute Msg
 cellStyle isAlive =
     let
@@ -276,7 +297,11 @@ cellStyle isAlive =
 
 
 
-{- VIEW FUNCTION: LABELS -}
+{- VIEW FUNCTION: LABELS
+   These compute a string as a function of the model and
+   are used in constructing the legend belo the grid --
+   information about population, density, etc.
+-}
 
 
 countLiveCells : Grid -> Int
