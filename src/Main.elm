@@ -101,16 +101,19 @@ randomPair =
     Random.pair (Random.int 0 gridSize) (Random.int 0 gridSize)
 
 
-createLiveCells : Grid -> ( Int, Int ) -> Int -> Int -> Bool -> Bool
-createLiveCells grid newCell x y isAlive =
+{-| If cell == (x,y) then true else state. This is a helper
+function for the call Matrix.indexedMap (createLiveCells ( i, j )) model.grid
+-}
+createLiveCells : ( Int, Int ) -> Int -> Int -> Bool -> Bool
+createLiveCells cell x y state =
     let
         ( xx, yy ) =
-            newCell
+            cell
     in
         if abs x == xx && abs y == yy then
             True
         else
-            isAlive
+            state
 
 
 {-| Return the negation of the model.generatateNewCells
@@ -146,7 +149,7 @@ makeNewLiveCell model ( i, j ) =
 
         newGrid =
             if genCells then
-                Matrix.indexedMap (createLiveCells model.grid ( i, j )) model.grid
+                Matrix.indexedMap (createLiveCells ( i, j )) model.grid
             else
                 model.grid
     in
